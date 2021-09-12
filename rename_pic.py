@@ -7,16 +7,10 @@ import re
 from exif import Image
 import logging
 
-FORMAT = '%(levelname)s %(asctime)-15s %(message)s process is %(process)d logger name %(name)s'# %(clientip)s %(user)-8s %(message)s'
-logging.basicConfig(format=FORMAT)
-#d = {'clientip': '192.168.0.1', 'user': 'fbloggs'}
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 def get_exif_misc(image):
     with open(image, 'rb') as image_meta:
         my_meta = Image(image_meta)
-    #print(my_meta.has_exif)
     print(type(my_meta))
     print(dir(my_meta))
     print(my_meta.datetime)
@@ -81,7 +75,6 @@ class GetNewTimestamp:
             logger.error(f'other error{e}')
 
     def loop_photos(self, folder):
-        #print(f'folder is {folder}')
         logger.info(f'folder is {folder}')
         os.chdir(folder)
         for photo in os.listdir(folder):
@@ -92,10 +85,7 @@ class GetNewTimestamp:
                 os.chdir(folder)
                 continue
             try:
-                #print(f'photo is {photo}')
-                #logger.info(f'photo name is {photo}')
                 timestamp_new = self.get_exif2(photo)
-                #print(f'new name will be {timestamp_new}')
                 logger.info(f'new name will be {timestamp_new}')
                 #os.rename(photo,timestamp_new)
             except Exception as e:
@@ -103,6 +93,11 @@ class GetNewTimestamp:
                 #print(f'error is {e}')
 import sys
 if __name__ == '__main__':
+    FORMAT = '%(levelname)s %(asctime)-15s %(message)s process is %(process)d logger name %(name)s'  # %(clientip)s %(user)-8s %(message)s'
+    logging.basicConfig(format=FORMAT)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
     folder = pathlib.Path(sys.argv[1])#photo_path='D:/misc/test_rename_pic')
     s = GetNewTimestamp()
     s.loop_photos(folder)
