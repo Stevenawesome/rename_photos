@@ -6,6 +6,7 @@ import pathlib
 import re
 from exif import Image
 import logging
+import sys
 
 
 def get_exif_misc(image):
@@ -20,6 +21,7 @@ def get_exif_misc(image):
 
 class GetNewTimestamp:
     def __init__(self):
+        self.count = 0
         pass
 
     def get_exif2(self, image):
@@ -27,19 +29,12 @@ class GetNewTimestamp:
         tag_value = {}
         try:
             if not image_handle.getexif():
-                #print(f'no meta data, return original data')
                 logger.error(f'no meta data, return original data')
-                return image
+                return False
             info = image_handle.getexif()
-            #print(f'tag, value is:\n ')
-            #print(type(info))
-            #print(f'dic {dict(info)}')
-            #print(info)
-#            for tag, value in info.items():
             for tag_id in info:
                 tag = PIL.ExifTags.TAGS.get(tag_id,tag_id)
                 value = info.get(tag_id)
-#                decoded = PIL.ExifTags.TAGS.get(tag, tag)
                 if isinstance(value,bytes):
                     try:
                         value = value.decode()
@@ -47,31 +42,26 @@ class GetNewTimestamp:
                         continue
                 tag_value[tag] = value
                 if 'Date' in tag or 'date' in tag:
-                    #print(f'{tag} {value}')
                     logger.info(f'{tag} {value}')
-#            print(tag_value)
+            if 'DateTimeOriginal' not in tag_value or 'DateTimeDigitized' not in tag_value or 'DateTime' not in tag_value :
+                logger.info('no meta date, using current file date')
+                return False
             if 'DateTimeOriginal' in tag_value:
                 original_timestamp = tag_value['DateTimeOriginal']
             elif 'DateTimeDigitized' in tag_value:
                 original_timestamp = tag_value['DateTimeDigitized']
-            elif 'DateTime' in tag_value:
+            else: #if 'DateTime' in tag_value:
                 original_timestamp = tag_value['DateTime']
-            else:
-                #print('no meta date, using file date')
-                file_stat_path = pathlib.Path(image)
-                #print(file_stat_path.stat())
-                curtime = datetime.datetime.fromtimestamp(file_stat_path.stat().st_ctime)
-                original_timestamp = curtime.strftime("%Y%m%d_%H%M%S")
+                #file_stat_path = pathlib.Path(image)
+                #curtime = datetime.datetime.fromtimestamp(file_stat_path.stat().st_ctime)
+                #original_timestamp = curtime.strftime("%Y%m%d_%H%M%S")
             original_timestamp = re.split(':|\t|\n|\s', original_timestamp)
-            original_timestamp = ''.join(original_timestamp) + '.jpg'
-            #count += 1
-            #print(f'we should convert it to {original_timestamp}\n\n')
+            original_timestamp = ''.join(original_timestamp+['_']+[image]) + '.jpg'
+            self.count += 1
             return original_timestamp
         except AttributeError as ate:
-            #print(f'no attribute {ate}')
             logger.error(f'no attribute {ate}')
         except Exception as e:
-            #print(f'other error{e}')
             logger.error(f'other error{e}')
 
     def loop_photos(self, folder):
@@ -79,26 +69,27 @@ class GetNewTimestamp:
         os.chdir(folder)
         for photo in os.listdir(folder):
             if os.path.isdir(photo):
-                #print(f'not file {photo}')
-                logger.error(f'not file {photo}')
+                logger.warning(f'not file {photo}')
                 self.loop_photos(pathlib.Path(folder / photo))
                 os.chdir(folder)
                 continue
             try:
                 timestamp_new = self.get_exif2(photo)
-                logger.info(f'new name will be {timestamp_new}')
+                if timestamp_new:
+                    logger.critical(f'old name is {photo}, new name will be {timestamp_new}')
                 #os.rename(photo,timestamp_new)
             except Exception as e:
                 logger.error(e)
-                #print(f'error is {e}')
-import sys
+
+
 if __name__ == '__main__':
     FORMAT = '%(levelname)s %(asctime)-15s %(message)s process is %(process)d logger name %(name)s'  # %(clientip)s %(user)-8s %(message)s'
     logging.basicConfig(format=FORMAT)
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-
-    folder = pathlib.Path(sys.argv[1])#photo_path='D:/misc/test_rename_pic')
+    logger.setLevel(int(sys.argv[2]))
+    folder = pathlib.Path(sys.argv[1]) # photo_path='D:/misc/test_rename_pic')
     s = GetNewTimestamp()
     s.loop_photos(folder)
+    print(f'finished {s.count} photos')
+    logger.info(f'finished {s.count} photos')
 
