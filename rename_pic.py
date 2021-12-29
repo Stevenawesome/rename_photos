@@ -77,7 +77,7 @@ class GetNewTimestamp:
                 timestamp_new = self.get_exif2(photo)
                 if timestamp_new:
                     logger.critical(f'old name is {photo}, new name will be {timestamp_new}')
-                #os.rename(photo,timestamp_new)
+                os.rename(photo,timestamp_new)
             except Exception as e:
                 logger.error(e)
 
@@ -87,9 +87,11 @@ if __name__ == '__main__':
     logging.basicConfig(format=FORMAT)
     logger = logging.getLogger()
     logger.setLevel(int(sys.argv[2]))
-    folder = pathlib.Path(sys.argv[1]) # photo_path='D:/misc/test_rename_pic')
+    cur_folder = pathlib.Path(sys.argv[1])  # photo_path='D:/misc/test_rename_pic')
+    #cur_folder = sys.argv[1]
+    os.mkdir(pathlib.Path(cur_folder / 'backup'))
     s = GetNewTimestamp()
-    s.loop_photos(folder)
+    s.loop_photos(cur_folder)
     print(f'finished {s.count} photos')
     logger.info(f'finished {s.count} photos')
 
