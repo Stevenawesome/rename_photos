@@ -20,11 +20,13 @@ def get_exif_misc(image):
 
 
 class GetNewTimestamp:
-    def __init__(self):
+    def __init__(self, folder):
         self.count = 0
+        self.folder = folder
         pass
 
     def get_exif2(self, image):
+        #print(image)
         image_handle = PIL.Image.open(image)
         tag_value = {}
         try:
@@ -42,8 +44,10 @@ class GetNewTimestamp:
                         continue
                 tag_value[tag] = value
                 if 'Date' in tag or 'date' in tag:
+                    print(image, tag, value)
+                    print(tag_value,'\n\n')
                     logger.info(f'{tag} {value}')
-            if 'DateTimeOriginal' not in tag_value or 'DateTimeDigitized' not in tag_value or 'DateTime' not in tag_value :
+            if 'DateTimeOriginal' not in tag_value and 'DateTimeDigitized' not in tag_value and 'DateTime' not in tag_value :
                 logger.info('no meta date, using current file date')
                 return False
             if 'DateTimeOriginal' in tag_value:
@@ -52,6 +56,8 @@ class GetNewTimestamp:
                 original_timestamp = tag_value['DateTimeDigitized']
             else: #if 'DateTime' in tag_value:
                 original_timestamp = tag_value['DateTime']
+                logger.critical('fjdkajfdal'+tag_value['DateTime'])
+                print(tag_value['DateTime'])
                 #file_stat_path = pathlib.Path(image)
                 #curtime = datetime.datetime.fromtimestamp(file_stat_path.stat().st_ctime)
                 #original_timestamp = curtime.strftime("%Y%m%d_%H%M%S")
@@ -61,8 +67,10 @@ class GetNewTimestamp:
             return original_timestamp
         except AttributeError as ate:
             logger.error(f'no attribute {ate}')
+            return False
         except Exception as e:
             logger.error(f'other error{e}')
+            return False
 
     def loop_photos(self, folder):
         logger.info(f'folder is {folder}')
@@ -77,21 +85,33 @@ class GetNewTimestamp:
                 timestamp_new = self.get_exif2(photo)
                 if timestamp_new:
                     logger.critical(f'old name is {photo}, new name will be {timestamp_new}')
-                os.rename(photo,timestamp_new)
+                    print('adding mapping', photo, timestamp_new, str(folder))
+                    mapping[photo] =(timestamp_new, folder)
+                #os.rename(photo,timestamp_new)
             except Exception as e:
                 logger.error(e)
+                continue
 
 
 if __name__ == '__main__':
     FORMAT = '%(levelname)s %(asctime)-15s %(message)s process is %(process)d logger name %(name)s'  # %(clientip)s %(user)-8s %(message)s'
-    logging.basicConfig(format=FORMAT)
+    logging.basicConfig(filemode='a', format=FORMAT)
+    handler = logging.FileHandler(sys.argv[0] + ".log", 'a', 'utf-8')
+
     logger = logging.getLogger()
     logger.setLevel(int(sys.argv[2]))
+    logger.addHandler(handler)
     cur_folder = pathlib.Path(sys.argv[1])  # photo_path='D:/misc/test_rename_pic')
     #cur_folder = sys.argv[1]
-    os.mkdir(pathlib.Path(cur_folder / 'backup'))
-    s = GetNewTimestamp()
+#    os.mkdir(pathlib.Path(cur_folder / 'backup'))
+    s = GetNewTimestamp(cur_folder)
+    mapping = {}
     s.loop_photos(cur_folder)
     print(f'finished {s.count} photos')
     logger.info(f'finished {s.count} photos')
+    print(mapping)
+    with open('changed_files.txt', 'a', encoding="utf-8") as fh:
+        for k, v in mapping.items():
+            print(k, v)
+            fh.write(str(v[1]) +'\t' +k +'to'+v[0])
 
