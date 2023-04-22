@@ -3,10 +3,9 @@ misc/
 __pycache__/
 *.py[cod]
 *$py.class
-log/*
 # C extensions
 *.so
-
+.idea/
 # Distribution / packaging
 .Python
 build/
