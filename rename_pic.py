@@ -7,7 +7,7 @@ import re
 from exif import Image
 import logging
 import sys
-
+import hashlib
 
 def get_exif_misc(image):
     with open(image, 'rb') as image_meta:
@@ -19,13 +19,13 @@ def get_exif_misc(image):
     print(my_meta.datetime_digitized)
 
 
-class GetNewTimestamp:
+class Pic:
     def __init__(self, folder):
         self.count = 0
         self.folder = folder
         pass
 
-    def get_exif2(self, image):
+    def get_exif_info(self, image):
         #print(image)
         image_handle = PIL.Image.open(image)
         tag_value = {}
@@ -82,8 +82,10 @@ class GetNewTimestamp:
                 os.chdir(folder)
                 continue
             try:
-                timestamp_new = self.get_exif2(photo)
+                timestamp_new = self.get_exif_info(photo)
                 if timestamp_new:
+                    MD5 = hashlib.md5(photo)
+
                     logger.critical(f'old name is {photo}, new name will be {timestamp_new}')
                     print('adding mapping', photo, timestamp_new, str(folder))
                     mapping[photo] =(timestamp_new, folder)
@@ -95,16 +97,21 @@ class GetNewTimestamp:
 
 if __name__ == '__main__':
     FORMAT = '%(levelname)s %(asctime)-15s %(message)s process is %(process)d logger name %(name)s'  # %(clientip)s %(user)-8s %(message)s'
-    logging.basicConfig(filemode='a', format=FORMAT)
+    logging.basicConfig(filemode='a', format=FORMAT, level=logging.DEBUG)
     handler = logging.FileHandler(sys.argv[0] + ".log", 'a', 'utf-8')
 
     logger = logging.getLogger()
-    logger.setLevel(int(sys.argv[2]))
+    #log_level = 50
+    #if sys.argv[2]:
+    #    logger.setLevel(int(sys.argv[2]))
+    #logger.setLevel(int(log_level))
     logger.addHandler(handler)
-    cur_folder = pathlib.Path(sys.argv[1])  # photo_path='D:/misc/test_rename_pic')
+    cur_folder = pathlib.Path("d:\\misc\\test_rename_pic")
+    if len(sys.argv)>1:# and sys.argv[1]:
+        cur_folder = pathlib.Path(sys.argv[1])  # photo_path='D:/misc/test_rename_pic')
     #cur_folder = sys.argv[1]
 #    os.mkdir(pathlib.Path(cur_folder / 'backup'))
-    s = GetNewTimestamp(cur_folder)
+    s = Pic(cur_folder)
     mapping = {}
     s.loop_photos(cur_folder)
     print(f'finished {s.count} photos')
