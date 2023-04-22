@@ -8,7 +8,10 @@ from exif import Image
 import logging
 import sys
 import hashlib
+import logging
 
+logging.config.fileConfig('logger.config')
+logger = logging.getLogger(__name__)
 def get_exif_misc(image):
     with open(image, 'rb') as image_meta:
         my_meta = Image(image_meta)
@@ -23,7 +26,6 @@ class Pic:
     def __init__(self, folder):
         self.count = 0
         self.folder = folder
-        pass
 
     def get_exif_info(self, image):
         #print(image)
@@ -67,10 +69,10 @@ class Pic:
             return original_timestamp
         except AttributeError as ate:
             logger.error(f'no attribute {ate}')
-            return False
+            raise
         except Exception as e:
             logger.error(f'other error{e}')
-            return False
+            raise
 
     def loop_photos(self, folder):
         logger.info(f'folder is {folder}')
@@ -96,16 +98,16 @@ class Pic:
 
 
 if __name__ == '__main__':
-    FORMAT = '%(levelname)s %(asctime)-15s %(message)s process is %(process)d logger name %(name)s'  # %(clientip)s %(user)-8s %(message)s'
-    logging.basicConfig(filemode='a', format=FORMAT, level=logging.DEBUG)
-    handler = logging.FileHandler(sys.argv[0] + ".log", 'a', 'utf-8')
+    #FORMAT = '%(levelname)s %(asctime)-15s %(message)s process is %(process)d logger name %(name)s'  # %(clientip)s %(user)-8s %(message)s'
+    #logging.basicConfig(filemode='a', format=FORMAT, level=logging.DEBUG)
+    #handler = logging.FileHandler(sys.argv[0] + ".log", 'a', 'utf-8')
 
-    logger = logging.getLogger()
+    #logger = logging.getLogger()
     #log_level = 50
     #if sys.argv[2]:
     #    logger.setLevel(int(sys.argv[2]))
     #logger.setLevel(int(log_level))
-    logger.addHandler(handler)
+    #logger.addHandler(handler)
     cur_folder = pathlib.Path("d:\\misc\\test_rename_pic")
     if len(sys.argv)>1:# and sys.argv[1]:
         cur_folder = pathlib.Path(sys.argv[1])  # photo_path='D:/misc/test_rename_pic')
